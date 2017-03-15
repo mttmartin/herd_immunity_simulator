@@ -27,6 +27,12 @@ class World:
                     self.people[i].interact(self.people[j])
                     self.people[j].interact(self.people[i])
 
+    def immunize_population(self,percent,vaccine):
+        num_to_vaccinate = int(self.get_population() * percent/100.0)
+
+        for i in range(num_to_vaccinate):
+           self.people[i].vaccinate(vaccine)
+
     def tick(self):
         infected_num=0
         immune_num=0
@@ -72,6 +78,8 @@ class Person:
         self.immune = False
         self.alive = True
         self.infected = False
+        self.vaccinated = False
+        self.vaccine_effect = 0
         self.infect_time = 0
         self.pathogen = None
         self.x = random.randint(0,50)
@@ -79,7 +87,7 @@ class Person:
         if self.immune:
             return
 
-        if random.random() < pathogen.get_score():
+        if random.random()+self.vaccine_effect < pathogen.get_score():
             self.infected = True
             self.infect_time = 0
             self.pathogen=pathogen
@@ -93,6 +101,14 @@ class Person:
                 self.pathogen = None
                 self.immune = True
                 self.infected = False
+
+    def vaccinate(self,vaccine):
+        self.vaccinated = True
+        self.vaccine_effect = vaccine.get_effect_score()
+
+    def get_vaccinated(self):
+        return self.vaccinated
+
     def set_pos(self,x):
         self.x = x
 
@@ -121,6 +137,14 @@ class Person:
 
     def is_immune(self):
         return self.immune
+
+class Vaccine:
+    def __init__(self,effect_score=0.95):
+        self.effect_score = effect_score
+
+    def get_effect_score(self):
+        return self.effect_score
+
 def main():
     pathogen = Pathogen(score=0.6,lethality=0.05)
     pop_target=100
@@ -132,6 +156,8 @@ def main():
             person.infect(pathogen)
         world.add_person(person)
 
+    vac1 = Vaccine(effect_score=0.80)
+    world.immunize_population(60,vac1)
 
     target_tick = 50
     for i in range(target_tick):
