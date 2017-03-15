@@ -86,18 +86,6 @@ class World:
             y_vals.append(y)
         return x_vals,y_vals
 
-    def plot(self,plt):
-        x_vals = []
-        y_vals = []
-        axes = plt.gca()
-        #axes.set_xlim=(0,20)
-        #axes.set_ylim=(0,20)
-        line, = axes.plot(x_vals,y_vals)
-        for person in self.people:
-            x,y = person.get_pos()
-            x_vals.append(x)
-            y_vals.append(y)
-        plt.draw()
 class Pathogen:
     def __init__(self,score=0.1,infect_time=100,lethality=0.5):
         self.score = score
