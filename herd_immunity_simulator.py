@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # A very simple epidemic simulation
 import random
+import matplotlib.pyplot as plt
 
 class World:
     def __init__(self):
@@ -23,7 +24,7 @@ class World:
             for j in range(len(self.people)):
                 if i == j:
                     continue
-                if self.people[i].get_loc() == self.people[j].get_loc():
+                if self.people[i].get_pos() == self.people[j].get_pos():
                     self.people[i].interact(self.people[j])
                     self.people[j].interact(self.people[i])
 
@@ -38,11 +39,25 @@ class World:
         immune_num=0
         for person in self.people:
             person.tick()
-            if person.is_infected():
+            if person.get_infected():
                 infected_num += 1
             if person.is_immune():
                 immune_num += 1
-            person.set_pos(random.randint(0,self.world_size),random.randint(0,self.world_size))
+
+            current_pos = person.get_pos()
+            x,y = current_pos[0]+random.randint(-1,1),current_pos[1]+random.randint(-1,1)
+            if x > self.world_size:
+                x = self.world_size-1
+            elif x < 0:
+                x = 1
+
+            if y > self.world_size:
+                y = self.world_size-1
+            elif y < 0:
+                y = 1
+
+            person.set_pos(x,y)
+
             if person.get_alive() == False:
                 self.remove_person(person)
         self.do_interactions()
@@ -58,8 +73,33 @@ class World:
     def get_population(self):
         return self.population
 
+    def get_population_locs(self,get_infected=True,get_not_infected=False):
+        x_vals = []
+        y_vals = []
+        for person in self.people:
+            if get_infected and not person.get_infected():
+                continue
+            if get_not_infected and person.get_infected():
+                continue
+            x,y = person.get_pos()
+            x_vals.append(x)
+            y_vals.append(y)
+        return x_vals,y_vals
+
+    def plot(self,plt):
+        x_vals = []
+        y_vals = []
+        axes = plt.gca()
+        #axes.set_xlim=(0,20)
+        #axes.set_ylim=(0,20)
+        line, = axes.plot(x_vals,y_vals)
+        for person in self.people:
+            x,y = person.get_pos()
+            x_vals.append(x)
+            y_vals.append(y)
+        plt.draw()
 class Pathogen:
-    def __init__(self,score=0.1,infect_time=5,lethality=0.5):
+    def __init__(self,score=0.1,infect_time=100,lethality=0.5):
         self.score = score
         self.infect_time = infect_time
         self.lethality = lethality
@@ -82,7 +122,8 @@ class Person:
         self.vaccine_effect = 0
         self.infect_time = 0
         self.pathogen = None
-        self.x = random.randint(0,50)
+        self.x = random.randint(0,20)
+        self.y = random.randint(0,20)
     def exposure(self,pathogen):
         if self.immune:
             return
@@ -113,16 +154,16 @@ class Person:
         self.x = x
         self.y = y
 
-    def get_loc(self):
+    def get_pos(self):
         return self.x,self.y
 
-    def is_infected(self):
+    def get_infected(self):
         return self.infected
 
     def interact(self,other):
-        if self.is_infected():
+        if self.get_infected():
             return
-        if other.is_infected():
+        if other.get_infected():
             self.exposure(other.get_pathogen())
 
     def get_pathogen(self):
@@ -147,7 +188,7 @@ class Vaccine:
         return self.effect_score
 
 def main():
-    pathogen = Pathogen(score=0.6,lethality=0.05)
+    pathogen = Pathogen(score=0.9,lethality=0.05)
     pop_target=100
 
     world = World()
@@ -157,10 +198,18 @@ def main():
             person.infect(pathogen)
         world.add_person(person)
 
-    vac1 = Vaccine(effect_score=0.80)
-    world.immunize_population(60,vac1)
+    vac1 = Vaccine(effect_score=0.8)
+    world.immunize_population(70,vac1)
 
     target_tick = 50
+
+    plt.ion()
+    axes= plt.gca()
+    axes.set_xlim([0,20])
+    axes.set_ylim([0,20])
+    healthy_points, = axes.plot([],[],'bo')
+    infected_points, = axes.plot([],[],'ro')
+
     for i in range(target_tick):
         world.tick()
         infected_num = world.get_infected()
@@ -168,11 +217,24 @@ def main():
         total_pop = world.get_population()
         not_infected_num = total_pop - infected_num
 
+        x_vals_healthy,y_vals_healthy = world.get_population_locs(get_infected=False,get_not_infected=True)
+
+        x_vals_infected,y_vals_infected = world.get_population_locs(get_infected=True,get_not_infected=False)
+
+        healthy_points.set_xdata(x_vals_healthy)
+        healthy_points.set_ydata(y_vals_healthy)
+
+        infected_points.set_xdata(x_vals_infected)
+        infected_points.set_ydata(y_vals_infected)
+        plt.draw()
+        plt.pause(0.1)
+
         print("Tick:        \t", i)
         print("Infected:    \t", infected_num)
         print("Not infected:\t", not_infected_num)
         print("Immune:      \t", immune_num)
         print("\n")
 
+    plt.show()
 if __name__ == "__main__":
     main()
