@@ -4,7 +4,7 @@ import random
 
 class World:
     def __init__(self):
-        self.world_size=100
+        self.world_size=20
         self.people = list()
         self.population=0
         self.immune_num=0
@@ -42,7 +42,7 @@ class World:
                 infected_num += 1
             if person.is_immune():
                 immune_num += 1
-            person.set_pos(random.randint(0,self.world_size))
+            person.set_pos(random.randint(0,self.world_size),random.randint(0,self.world_size))
             if person.get_alive() == False:
                 self.remove_person(person)
         self.do_interactions()
@@ -109,11 +109,12 @@ class Person:
     def get_vaccinated(self):
         return self.vaccinated
 
-    def set_pos(self,x):
+    def set_pos(self,x,y):
         self.x = x
+        self.y = y
 
     def get_loc(self):
-        return self.x
+        return self.x,self.y
 
     def is_infected(self):
         return self.infected
